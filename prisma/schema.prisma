@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum CompanyMembershipRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum AuthSessionStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+model User {
+  id              String              @id @default(cuid())
+  email           String              @unique
+  fullName        String
+  passwordHash    String
+  isPlatformAdmin Boolean             @default(false)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  memberships     CompanyMembership[]
+  sessions        AuthSession[]
+
+  @@index([email])
+}
+
+model Company {
+  id           String              @id @default(cuid())
+  name         String
+  slug         String              @unique
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  memberships  CompanyMembership[]
+  sessions     AuthSession[]
+
+  @@index([slug])
+}
+
+model CompanyMembership {
+  id          String                @id @default(cuid())
+  userId      String
+  companyId   String
+  role        CompanyMembershipRole @default(MEMBER)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  company     Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, companyId])
+  @@index([companyId, role])
+  @@index([userId])
+}
+
+model AuthSession {
+  id             String            @id @default(cuid())
+  userId         String
+  companyId      String
+  tokenId        String            @unique
+  status         AuthSessionStatus @default(ACTIVE)
+  ipAddress      String?
+  userAgent      String?
+  expiresAt      DateTime
+  createdAt      DateTime          @default(now())
+  revokedAt      DateTime?
+  company        Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([companyId, status])
+  @@index([expiresAt])
+}
