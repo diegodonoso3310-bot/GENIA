@@ -1,0 +1,8 @@
+{
+  "name": "genia-phase-2-ui",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "check": "node --check src/main.js"
+  }
+}
